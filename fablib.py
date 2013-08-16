@@ -80,6 +80,7 @@ class UserProfile(Resource):
 
 api.add_resource(UserProfile, '/<string:profile>')
 
+
 class Document(Resource):
     def get(self, profile, document):
         return {'user': _user, 'document': _document}
@@ -88,13 +89,11 @@ class Document(Resource):
         todos[profile] = request.form['data']
         return {'user': _user, 'document': _document}
 
+api.add_resource(Content, '/<string:profile>/<path:document>')
+
 class Content(Resource):
     def get(self, key):
         return {'text': trunk.get(key)}
-
-    # def put(self, key, data):
-    #     todos[profile] = request.form['data']
-    #     return {'user': _user, 'document': _document}
 
 api.add_resource(Content, '/content/<string:key>')
 
@@ -109,18 +108,6 @@ class NewContent(Resource):
         return self.post()
 
 api.add_resource(NewContent, '/content')
-
-
-@app.route('/render', methods=['PUT', 'POST'])
-def render():
-    pass
-
-@app.route('/render/<string:profile>/<path:document>')
-def render_document(profile, document):
-
-    return markdown(_document['text'])
-
-
 
 
 if __name__ == '__main__':
