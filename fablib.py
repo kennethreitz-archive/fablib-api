@@ -89,7 +89,7 @@ class Document(Resource):
         todos[profile] = request.form['data']
         return {'user': _user, 'document': _document}
 
-api.add_resource(Content, '/<string:profile>/<path:document>')
+api.add_resource(Document, '/<string:profile>/<path:document>')
 
 class Content(Resource):
     def get(self, key):
