@@ -120,16 +120,6 @@ def render_document(profile, document):
 
     return markdown(_document['text'])
 
-class MarkdownService(Resource):
-    def get(self, profile, document):
-        return {'user': _user, 'document': _document}
-
-    def put(self, profile, document):
-        todos[profile] = request.form['data']
-        return {'user': _user, 'document': _document}
-
-api.add_resource(MarkdownService, '/render')
-
 
 
 
