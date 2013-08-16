@@ -65,7 +65,8 @@ class Sessions(object):
         return UserModel.from_username(self.get(key))
 
     def set(self, key, value):
-        self.redis.setex(self._transpose(key), SESSION_LIFETIME, value)
+        # self.redis.setex(self._transpose(key), SESSION_LIFETIME, value)
+        self.redis.set(self._transpose(key), value)
 
     def create(self, username):
         user = UserModel.from_username(username)
@@ -225,12 +226,8 @@ class SessionAPI(Resource):
         parser.add_argument('password', type=str, required=True)
         args = parser.parse_args()
 
-        print sessions.login(args.get('username'), args.get('password'))
-
-        # return {'success': True, 'id': key}, 301, {'Location': '/content/{}'.format(key)}
-
-
-        # reqparse
+        key = sessions.login(args.get('username'), args.get('password'))
+        return {'success': True, 'session': key}, 301, {'Location': '/sessions/{}'.format(key)}
 
 api.add_resource(SessionAPI, '/sessions')
 
@@ -238,7 +235,7 @@ api.add_resource(SessionAPI, '/sessions')
 class ActiveSessionAPI(Resource):
     def get(self, session):
         u = sessions.get_user(session)
-        return {'valid': True, 'username': u.username, 'email': u.email}
+        return {'valid': True, 'username': u.username, 'email': u.email, 'id': session}
 
 api.add_resource(ActiveSessionAPI, '/sessions/<string:session>')
 
