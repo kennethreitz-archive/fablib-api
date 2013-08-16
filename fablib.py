@@ -2,8 +2,11 @@
 
 import os
 import hashlib
+from uuid import uuid4
+
 
 import boto
+import redis
 from markdown import markdown
 from flask import Flask, request, abort, redirect
 from flask.ext.restful import Resource, Api, reqparse, abort as rest_abort
@@ -13,6 +16,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 BUCKET_NAME = os.environ['BUCKET_NAME']
 DATABASE_URL = os.environ['DATABASE_URL']
+REDIS_URL = os.environ['OPENREDIS_URL']
+
+SESSION_LIFETIME = (30 * 24 * 60)
 
 class Trunk(object):
 
@@ -42,12 +48,55 @@ class Trunk(object):
 
         return text
 
+
+class Sessions(object):
+    _prefix = 'sessions:'
+
+    def __init__(self, redis_url):
+        self.redis = redis.from_url(redis_url)
+
+    def _transpose(self, key):
+        return ''.join((self._prefix, key))
+
+    def get(self, key):
+        return self.redis.get(self._transpose(key))
+
+    def get_user(self, key):
+        return UserModel.from_username(self.get(key))
+
+    def set(self, key, value):
+        self.redis.setex(self._transpose(key), SESSION_LIFETIME, value)
+
+    def create(self, username):
+        user = UserModel.from_username(username)
+        key = self.uuid()
+
+        self.set(key, user.username)
+
+        return key
+
+    def login(self, username, password):
+        user = UserModel.from_username(username)
+        is_valid_pass = user.check_password(password)
+
+        if is_valid_pass:
+            return self.create(username)
+
+    def is_valid(self, username, session):
+        s_user = self.get_user(session)
+        return username == s_user.username
+
+    @staticmethod
+    def uuid():
+        return str(uuid4())
+
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.debug = True
 api = Api(app)
-trunk = Trunk(BUCKET_NAME)
 db = SQLAlchemy(app)
+trunk = Trunk(BUCKET_NAME)
+sessions = Sessions(REDIS_URL)
 
 @app.route('/')
 def hello():
@@ -148,6 +197,7 @@ class Document(Resource):
 
 api.add_resource(Document, '/<string:profile>/<path:document>')
 
+
 class Content(Resource):
     def get(self, key):
         return {'text': trunk.get(key)}
@@ -165,6 +215,32 @@ class NewContent(Resource):
         return self.post()
 
 api.add_resource(NewContent, '/content')
+
+print redis
+
+class SessionAPI(Resource):
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('username', type=str, required=True)
+        parser.add_argument('password', type=str, required=True)
+        args = parser.parse_args()
+
+        print sessions.login(args.get('username'), args.get('password'))
+
+        # return {'success': True, 'id': key}, 301, {'Location': '/content/{}'.format(key)}
+
+
+        # reqparse
+
+api.add_resource(SessionAPI, '/sessions')
+
+
+class ActiveSessionAPI(Resource):
+    def get(self, session):
+        u = sessions.get_user(session)
+        return {'valid': True, 'username': u.username, 'email': u.email}
+
+api.add_resource(ActiveSessionAPI, '/sessions/<string:session>')
 
 
 if __name__ == '__main__':
