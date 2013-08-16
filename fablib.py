@@ -29,8 +29,13 @@ class Trunk(object):
         key = self.bucket.new_key(key_name)
         key.set_contents_from_string(data)
 
-    def get(self, key):
-         return self.bucket.get_key(key).read()
+    def get(self, key, render=False):
+        text = self.bucket.get_key(key).read()
+
+        if render:
+            text = markdown(text)
+
+        return text
 
 app = Flask(__name__)
 api = Api(app)
