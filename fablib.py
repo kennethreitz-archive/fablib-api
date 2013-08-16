@@ -1,11 +1,39 @@
 # -*- coding: utf-8 -*-
+import boto
+import hashlib
 
 from flask import Flask, request
 from flask.ext.restful import Resource, Api, reqparse
 from markdown import markdown
 
+BUCKET_NAME = os.environ['BUCKET_NAME']
+DATABASE_URL = os.environ['DATABASE_URL']
+
 app = Flask(__name__)
 api = Api(app)
+
+s3 = boto.connect_s3()
+
+
+
+def Trunk(object):
+
+    def __init__(self, bucket):
+        if bucket not in s3:
+            self.bucket = boto.connect_s3().create_bucket(bucket)
+        else:
+            self.bucket = boto.connect_s3().get_bucket(bucket)
+
+    def hash(self, data):
+        return hashlib.sha1(data).hexdigest()
+
+    def store(self, data):
+        key_name = hash(data)
+        key = self.bucket.new_key(key_name)
+        key.set_contents_from_string(data)
+
+    def get(self, key):
+         return self.bucket.get_key(key).read()
 
 @app.route('/')
 def hello():
