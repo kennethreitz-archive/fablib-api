@@ -6,7 +6,7 @@ import hashlib
 import boto
 from markdown import markdown
 from flask import Flask, request, abort, redirect
-from flask.ext.restful import Resource, Api, reqparse
+from flask.ext.restful import Resource, Api, reqparse, abort as rest_abort
 from flask.ext.sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -129,11 +129,14 @@ api.add_resource(UserProfile, '/<string:profile>')
 
 class Document(Resource):
     def get(self, profile, document):
-        u = UserModel.from_username(profile)
-        # d = UserModel.from_username(profile)
-        d = DocumentModel.from_keys(profile, document)
-        content = trunk.get(d.content)
+        try:
+            u = UserModel.from_username(profile)
+            d = DocumentModel.from_keys(profile, document)
 
+        except AttributeError:
+            rest_abort(404)
+
+        content = trunk.get(d.content)
         user = {'username': u.username, 'email': u.email}
         doc = {'text': content}
 
