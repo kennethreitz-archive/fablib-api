@@ -18,7 +18,7 @@ BUCKET_NAME = os.environ['BUCKET_NAME']
 DATABASE_URL = os.environ['DATABASE_URL']
 REDIS_URL = os.environ['OPENREDIS_URL']
 
-SESSION_LIFETIME = (30 * 24 * 60)
+SESSION_LIFETIME = (30 * 24)
 
 class Trunk(object):
 
