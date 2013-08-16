@@ -4,7 +4,7 @@ import os
 import hashlib
 
 import boto
-from flask import Flask, request
+from flask import Flask, request, abort, redirect
 from flask.ext.restful import Resource, Api, reqparse
 from markdown import markdown
 
@@ -29,6 +29,8 @@ class Trunk(object):
         key = self.bucket.new_key(key_name)
         key.set_contents_from_string(data)
 
+        return key_name
+
     def get(self, key, render=False):
         text = self.bucket.get_key(key).read()
 
@@ -38,6 +40,7 @@ class Trunk(object):
         return text
 
 app = Flask(__name__)
+app.debug=True
 api = Api(app)
 trunk = Trunk(BUCKET_NAME)
 
@@ -85,7 +88,27 @@ class Document(Resource):
         todos[profile] = request.form['data']
         return {'user': _user, 'document': _document}
 
-api.add_resource(Document, '/<string:profile>/<path:document>')
+class Content(Resource):
+    def get(self, key):
+        return {'text': trunk.get(key)}
+
+    # def put(self, key, data):
+    #     todos[profile] = request.form['data']
+    #     return {'user': _user, 'document': _document}
+
+api.add_resource(Content, '/content/<string:key>')
+
+
+class NewContent(Resource):
+    def post(self):
+        data = request.form['text']
+        key = trunk.store(data)
+        return {'success': True, 'id': key}, 301, {'Location': '/content/{}'.format(key)}
+
+    def put(self):
+        return self.post()
+
+api.add_resource(NewContent, '/content')
 
 
 @app.route('/render', methods=['PUT', 'POST'])
