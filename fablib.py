@@ -99,13 +99,6 @@ db = SQLAlchemy(app)
 trunk = Trunk(BUCKET_NAME)
 sessions = Sessions(REDIS_URL)
 
-@app.route('/')
-def hello():
-    return 'Hello World!'
-
-todos = {}
-todos['1'] = 'yo'
-
 
 class BaseModel(object):
     def save(self):
