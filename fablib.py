@@ -143,8 +143,8 @@ class DocumentModel(db.Model, BaseModel):
     slug = db.Column(db.String(120))
     content = db.Column(db.String(80), unique=False)
     private = db.Column(db.Boolean, default=False)
-    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    fork_of = db.Column(db.Integer, db.ForeignKey('documents.id'))
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=False)
+    fork_of = db.Column(db.Integer, db.ForeignKey('documents.id'), unique=False)
 
     def __repr__(self):
         return '<Document %r>' % self.id
@@ -163,40 +163,35 @@ class DocumentModel(db.Model, BaseModel):
         return DocumentModel.query.filter_by(owner_id=user.id, slug=slug).first()
 
 
-class UserProfile(Resource):
-    def get(self, profile):
-        return {'user': _user}
-
-    def put(self, profile):
-        parser.add_argument('data', type=str)
-        args = parser.parse_args()
-
-        todos[profile] = args['data']
-        return {'user': _user}
-
-api.add_resource(UserProfile, '/<string:profile>')
-
-
 class Document(Resource):
     def get(self, profile, document):
         try:
             u = UserModel.from_username(profile)
             d = DocumentModel.from_keys(profile, document)
+            content = trunk.get(d.content)
 
         except AttributeError:
             rest_abort(404)
 
-        content = trunk.get(d.content)
         user = {'username': u.username, 'email': u.email}
         doc = {'text': content}
 
         return {'user': user, 'document': doc}
 
     def put(self, profile, document):
-        todos[profile] = request.form['data']
-        return {'user': _user, 'document': _document}
+        # todos[profile] = request.form['data']
+        # return {'user': _user, 'document': _document}
+        pass
 
 api.add_resource(Document, '/<string:profile>/<path:document>')
+
+
+class Profile(Resource):
+    def get(self, profile):
+        return Document().get(profile, profile)
+
+api.add_resource(Profile, '/<string:profile>')
+
 
 
 class Content(Resource):
