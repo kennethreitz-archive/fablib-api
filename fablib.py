@@ -202,14 +202,28 @@ api.add_resource(Document, '/<string:profile>/<path:document>')
 
 class DocumentText(Resource):
     def get(self, profile, document):
-        return trunk.get(key)
+        try:
+            u = UserModel.from_username(profile)
+            d = DocumentModel.from_keys(profile, document)
+
+        except AttributeError:
+            rest_abort(404)
+
+        return trunk.get(d.content)
 
 api.add_resource(DocumentText, '/<string:profile>/<path:document>/text')
 
 
 class DocumentHTML(Resource):
     def get(self, profile, document):
-        return trunk.get(key)
+        try:
+            u = UserModel.from_username(profile)
+            d = DocumentModel.from_keys(profile, document)
+
+        except AttributeError:
+            rest_abort(404)
+
+        return trunk.get(d.content, render=True)
 
 api.add_resource(DocumentHTML, '/<string:profile>/<path:document>/html')
 
