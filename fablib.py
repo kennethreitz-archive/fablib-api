@@ -65,8 +65,8 @@ class Sessions(object):
         return UserModel.from_username(self.get(key))
 
     def set(self, key, value):
-        # self.redis.setex(self._transpose(key), SESSION_LIFETIME, value)
-        self.redis.set(self._transpose(key), value)
+        self.redis.setex(self._transpose(key), SESSION_LIFETIME, value)
+        # self.redis.set(self._transpose(key), value)
 
     def create(self, username):
         user = UserModel.from_username(username)
@@ -153,7 +153,23 @@ class DocumentModel(db.Model, BaseModel):
     @staticmethod
     def from_keys(username, slug):
         user = UserModel.from_username(username)
-        return DocumentModel.query.filter_by(owner_id=user.id, slug=slug).first()
+        if user:
+            return DocumentModel.query.filter_by(owner_id=user.id, slug=slug).first()
+
+    @staticmethod
+    def update(username, slug, document):
+        doc = DocumentModel.from_keys(username, slug)
+
+        if not doc:
+            user = UserModel.from_username(username)
+
+            doc = DocumentModel()
+            doc.slug = slug
+            doc.owner_id = user.id
+
+        # TODO: Update document history
+        doc.content = document
+        doc.save()
 
 
 class Document(Resource):
@@ -172,7 +188,20 @@ class Document(Resource):
         return {'user': user, 'document': doc}
 
     def put(self, profile, document):
-        # todos[profile] = request.form['data']
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('text', type=str, required=True)
+        args = parser.parse_args()
+        key = trunk.store(args.get('text'))
+
+        # TODO: verify ownership
+
+        # TODO: update document
+        d = DocumentModel.update(profile, document, key)
+
+
+
+        # todos[profile] = request.form['text']
         # return {'user': _user, 'document': _document}
         pass
 
@@ -196,16 +225,18 @@ api.add_resource(Content, '/content/<string:key>')
 
 class NewContent(Resource):
     def post(self):
-        data = request.form['text']
-        key = trunk.store(data)
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('text', type=str, required=True)
+        args = parser.parse_args()
+        key = trunk.store(args.get('text'))
+
         return {'success': True, 'id': key}, 301, {'Location': '/content/{}'.format(key)}
 
     def put(self):
         return self.post()
 
 api.add_resource(NewContent, '/content')
-
-print redis
 
 class SessionAPI(Resource):
     def post(self):
