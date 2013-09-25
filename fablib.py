@@ -188,24 +188,30 @@ class Document(Resource):
         return {'user': user, 'document': doc}
 
     def put(self, profile, document):
-
         parser = reqparse.RequestParser()
         parser.add_argument('text', type=str, required=True)
         args = parser.parse_args()
         key = trunk.store(args.get('text'))
-
         # TODO: verify ownership
-
         # TODO: update document
         d = DocumentModel.update(profile, document, key)
 
-
-
-        # todos[profile] = request.form['text']
-        # return {'user': _user, 'document': _document}
-        pass
+        return self.get()
 
 api.add_resource(Document, '/<string:profile>/<path:document>')
+
+class DocumentText(Resource):
+    def get(self, key):
+        return trunk.get(key)
+
+api.add_resource(DocumentText, '/<string:profile>/<path:document>/text')
+
+
+class DocumentHTML(Resource):
+    def get(self, key):
+        return trunk.get(key)
+
+api.add_resource(DocumentHTML, '/<string:profile>/<path:document>/html')
 
 
 class Profile(Resource):
@@ -221,6 +227,20 @@ class Content(Resource):
         return {'text': trunk.get(key)}
 
 api.add_resource(Content, '/content/<string:key>')
+
+
+class ContentText(Resource):
+    def get(self, key):
+        return trunk.get(key)
+
+api.add_resource(ContentText, '/content/<string:key>/text')
+
+
+class ContentHTML(Resource):
+    def get(self, key):
+        return trunk.get(key, render=True)
+
+api.add_resource(ContentHTML, '/content/<string:key>/html')
 
 
 class NewContent(Resource):
