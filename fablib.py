@@ -201,14 +201,14 @@ class Document(Resource):
 api.add_resource(Document, '/<string:profile>/<path:document>')
 
 class DocumentText(Resource):
-    def get(self, key):
+    def get(self, profile, document):
         return trunk.get(key)
 
 api.add_resource(DocumentText, '/<string:profile>/<path:document>/text')
 
 
 class DocumentHTML(Resource):
-    def get(self, key):
+    def get(self, profile, document):
         return trunk.get(key)
 
 api.add_resource(DocumentHTML, '/<string:profile>/<path:document>/html')
